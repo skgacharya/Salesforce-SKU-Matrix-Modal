@@ -1,0 +1,12 @@
+trigger OrderSkuTrigger on Order_SKU__c (
+    after insert, 
+    after update, 
+    after delete, 
+    after undelete
+) {
+
+    List<Order_SKU__c> newListVar = Trigger.isDelete ? null : Trigger.new;
+    List<Order_SKU__c> oldListVar = Trigger.isInsert ? null : Trigger.old;
+
+    OrderSkuHandler.updateOrderItemTotals(newListVar, oldListVar);
+}

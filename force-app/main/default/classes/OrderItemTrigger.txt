@@ -1,0 +1,112 @@
+trigger OrderItemTrigger on OrderItem 
+    (before insert, before update, after insert, after update) {
+
+    /* =========================================================
+       BEFORE LOGIC
+       ========================================================= */
+
+    // BEFORE INSERT → Set initial Request Quantity
+    if (Trigger.isBefore && Trigger.isInsert) {
+        for (OrderItem item : Trigger.new) {
+            item.Request_Quantity__c = item.Quantity;
+        }
+    }
+
+    // BEFORE UPDATE → Store old quantity in Request_Quantity__c
+    if (Trigger.isBefore && Trigger.isUpdate) {
+        for (OrderItem newItem : Trigger.new) {
+            OrderItem oldItem = Trigger.oldMap.get(newItem.Id);
+            if (newItem.Quantity != oldItem.Quantity) {
+                newItem.Request_Quantity__c = oldItem.Quantity;
+            }
+        }
+    }
+
+    /* =========================================================
+       AFTER LOGIC
+       ========================================================= */
+
+    if (Trigger.isAfter && (Trigger.isInsert || Trigger.isUpdate)) {
+
+        Set<Id> orderIds = new Set<Id>();
+        Set<Id> quantityChangedOrderIds = new Set<Id>();
+
+        // Collect affected Orders
+        for (OrderItem newItem : Trigger.new) {
+
+            if (newItem.OrderId != null) {
+                orderIds.add(newItem.OrderId);
+            }
+
+            // Detect quantity change (update only)
+            if (Trigger.isUpdate) {
+                OrderItem oldItem = Trigger.oldMap.get(newItem.Id);
+                if (newItem.Quantity != oldItem.Quantity && newItem.OrderId != null) {
+                    quantityChangedOrderIds.add(newItem.OrderId);
+                }
+            }
+        }
+
+        if (orderIds.isEmpty() && quantityChangedOrderIds.isEmpty()) return;
+
+        Map<Id, Order> ordersToUpdateMap = new Map<Id, Order>();
+
+        /* =========================================================
+           1️⃣ PRICE ESCALATION LOGIC
+           ========================================================= */
+
+        if (!orderIds.isEmpty()) {
+
+            Set<Id> escalationOrders = new Set<Id>();
+
+            List<OrderItem> items = [
+                SELECT Id, OrderId, UnitPrice, ListPrice
+                FROM OrderItem
+                WHERE OrderId IN :orderIds
+            ];
+
+            for (OrderItem oi : items) {
+                if (oi.UnitPrice != oi.ListPrice) {
+                    escalationOrders.add(oi.OrderId);
+                }
+            }
+
+            for (Id oid : escalationOrders) {
+
+                if (!ordersToUpdateMap.containsKey(oid)) {
+                    ordersToUpdateMap.put(oid, new Order(Id = oid));
+                }
+
+                ordersToUpdateMap.get(oid).PriceEscalation__c = true;
+            }
+        }
+
+        /* =========================================================
+           2️⃣ QUANTITY APPROVAL LOGIC
+           ========================================================= */
+
+        if (!quantityChangedOrderIds.isEmpty()) {
+
+            for (Order ord : [
+                SELECT Id, PriceApproved__c, QuantityApproval__c
+                FROM Order
+                WHERE Id IN :quantityChangedOrderIds
+                AND PriceApproved__c = true
+            ]) {
+
+                if (ord.QuantityApproval__c != true) {
+
+                    if (!ordersToUpdateMap.containsKey(ord.Id)) {
+                        ordersToUpdateMap.put(ord.Id, new Order(Id = ord.Id));
+                    }
+
+                    ordersToUpdateMap.get(ord.Id).QuantityApproval__c = true;
+                }
+            }
+        }
+
+        if (!ordersToUpdateMap.isEmpty()) {
+            update ordersToUpdateMap.values();
+        }
+    }
+}
