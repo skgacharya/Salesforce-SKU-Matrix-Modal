@@ -1,0 +1,104 @@
+<template>
+    <template if:true={hasSkus}>
+        <lightning-card>
+            <div class="slds-p-around_medium">
+                <template if:false={isLoaded}>
+                    <div class="slds-is-relative slds-m-vertical_large">
+                        <lightning-spinner alternative-text="Loading" size="medium" variant="brand"></lightning-spinner>
+                    </div>
+                </template>
+                
+                <template if:true={isQuantityLocked}>
+                    <div class="slds-text-color_error slds-m-bottom_small">
+                       🔒 Order quantity is locked. Editing is not allowed.
+                    </div>
+                </template>
+
+                <div class="slds-m-bottom_small slds-text-heading_small">
+                    <span class={counterClass}>
+                        Total: {currentTotal} / {orderQty}
+                    </span>
+                </div>
+                <div class="table-container">
+                <table class="slds-table slds-table_bordered fixed-table" aria-busy={isLoadingAria}>
+                    <thead>
+                        <tr>
+                            <th>Diameter / Length</th>
+                            <template for:each={lengths} for:item="len">
+                                <th colspan="4" key={len}>{len}</th>
+                            </template>
+                        </tr>
+                        <tr>
+                            <th></th>
+                           <template for:each={headerColumns} for:item="group">
+                                <template for:each={group} for:item="col">
+                                    <th key={col.key}>{col.label}</th>
+                                </template>
+                            </template>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <template for:each={matrix} for:item="row">
+                            <tr key={row.diameter}>
+                                <td class="text-bold">{row.diameter}</td>
+                                <template for:each={row.values} for:item="cell">
+                                    <td key={cell.keyIH}>
+                                       <span class="slds-text-align_center">{cell.inHand}</span> 
+                                    </td>
+                                    <td key={cell.keyBO}>
+                                        <span class="slds-text-align_center">{cell.backOrder}</span> 
+                                    </td>
+                                    <td key={cell.keyPR}>
+                                        <span class="slds-text-align_center">{cell.proposed}</span> 
+                                    </td>
+                                    <td key={cell.keyQTY} class={cell.cellClass} title={cell.tooltip}>
+                                         <div class="input-container">
+                                            <lightning-input
+                                                type="number"
+                                                variant="label-hidden"
+                                                class="input-cell slds-text-align_center"
+                                                value={cell.qty}
+                                                data-dia={row.diameter}
+                                                data-len={cell.length}
+                                                data-skuid={cell.skuId}
+                                                step="1"
+                                                min="0"
+                                                disabled={cell.isDisabled}
+                                                readonly={isQuantityLocked}
+                                                onchange={handleChange}>
+                                            </lightning-input>
+                                        </div>
+                                    </td>
+                                </template>
+                            </tr>
+                        </template>
+                    </tbody>
+
+                </table>
+                </div>
+                <div class="slds-m-top_large">
+                    <lightning-button
+                        label="Save SKU Matrix"
+                        title="Save SKU Matrix"
+                        variant="brand"
+                        disabled={isSaveDisabled}
+                        onclick={handleSave}>
+                    </lightning-button>
+                </div>
+
+            </div>
+
+        </lightning-card>
+    </template>
+    <template if:false={hasSkus}>
+        <div class="slds-box slds-theme_alert-texture slds-theme_warning">
+            <p class="slds-text-heading_small">
+                No SKUs found for this product.
+            </p>
+            <p>
+                Please use the SKU Matrix to add product SKUs.
+            </p>
+        </div>
+    </template>
+</template>

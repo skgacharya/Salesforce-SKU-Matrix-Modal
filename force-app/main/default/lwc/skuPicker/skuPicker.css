@@ -1,0 +1,62 @@
+.container {
+    background: white;
+    padding: 16px;
+}
+
+.table-container {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 500px;
+    border: 1px solid #d8dde6;
+}
+
+.fixed-table th, 
+.fixed-table td { 
+    border: 1px solid #d8dde6; 
+    text-align: center; 
+    padding: 2px 12px; 
+    vertical-align: middle; 
+}
+
+.input-container {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+    padding: 0;
+    text-align: center;
+}
+
+.no-sku-cell {
+    background-color: #f4f4f4;
+    pointer-events: none;
+    opacity: 0.6; 
+    cursor: not-allowed;
+    text-align: center;
+}
+
+.sku-input.slds-input[disabled],
+.sku-input.slds-input.slds-is-disabled {
+    text-align: center !important;
+}
+
+input.sku-input.slds-input[disabled] {
+    text-align: center !important;
+}
+
+lightning-input::part(input) {
+    text-align: center;
+}
+
+.table-container .slds-input[disabled] {
+    text-align: center !important;
+}
+
+.sku-input {
+    width: 60px;
+    text-align: center !important;
+}
+
+.slds-input[disabled], .slds-input.slds-is-disabled {
+    text-align: center !important;
+    border-color: none;
+}
